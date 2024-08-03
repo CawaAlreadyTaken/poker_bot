@@ -1,5 +1,6 @@
 from random import shuffle, random, randint
 
+SCALA_COLORE = 0
 POKER = 0
 FULL = 0
 COLORE = 0
@@ -10,6 +11,7 @@ COPPIA = 0
 CARTA_ALTA = 0
 PARI = 0
 
+SCALA_COLORE_GIOCATORE = 0
 POKER_GIOCATORE = 0
 FULL_GIOCATORE = 0
 COLORE_GIOCATORE = 0
@@ -28,19 +30,61 @@ valori = [
     "SCALA",
     "COLORE",
     "FULL",
-    "POKER"
+    "POKER",
+    "SCALA COLORE"
 ]
 
 def createMazzo(mieCarte = [], flop = []):
     mazzo = [x for x in range(52)]
     shuffle(mazzo)
-    for x in mieCarte:
-        mazzo.remove(x)
+    if mieCarte is not None:
+        for x in mieCarte:
+            mazzo.remove(x)
     for i in range(len(flop)):
         x = flop[i]
         mazzo[mazzo.index(x)] = mazzo[i]
         mazzo[i] = x
     return mazzo
+
+def scala_colore(tutte, giocatore=False):
+    global SCALA_COLORE_GIOCATORE
+    colori = {'0': [], '1': [], '2': [], '3': []}
+    for carta in tutte:
+        colori[str(int(carta//13))].append(carta%13)
+
+    ordered = None
+    
+    for colore in colori:
+        if len(colori[colore]) >= 5:
+            ordered = sorted([x % 13 for x in colori[colore]])
+
+    if ordered is None:
+        return False
+
+    last = ordered[-1]
+    _scala_colore = -1
+    trovate = 1
+    
+    for carta in ordered[-2::-1]:
+        if carta == last-1:
+            trovate += 1
+            if trovate == 5:
+                _scala_colore = carta
+                break
+        else:
+            trovate = 1
+        last = carta
+    
+    if _scala_colore == -1:
+        if (ordered[0] + ordered[1] + ordered[2] + ordered[3]) == 6 and 12 in ordered:
+            if giocatore:
+                SCALA_COLORE_GIOCATORE += 1
+            return ("SCALA COLORE", ordered[3])
+        return False
+    
+    if giocatore:
+        SCALA_COLORE_GIOCATORE += 1
+    return ("SCALA COLORE", _scala_colore)
 
 def poker(tutte, giocatore=False):
     global POKER_GIOCATORE
@@ -232,7 +276,11 @@ def strCarta(valore):
 
 
 def calcolaValore(carte, altre_5, giocatore=False):
-    global POKER, FULL, COLORE, SCALA, TRIS, DOPPIA_COPPIA, COPPIA, CARTA_ALTA, CARTA_ALTA_GIOCATORE
+    global SCALA_COLORE, POKER, FULL, COLORE, SCALA, TRIS, DOPPIA_COPPIA, COPPIA, CARTA_ALTA, CARTA_ALTA_GIOCATORE
+    _scala_colore = scala_colore(carte + altre_5, giocatore)
+    if _scala_colore != False:
+        SCALA_COLORE += 1
+        return _scala_colore
     _poker = poker(carte + altre_5, giocatore)
     if _poker != False:
         POKER += 1
@@ -265,9 +313,6 @@ def calcolaValore(carte, altre_5, giocatore=False):
     if giocatore:
         CARTA_ALTA_GIOCATORE += 1
     return ("CARTA ALTA", sorted([x % 13 for x in carte + altre_5])[:-5:-1])
-
-
-
 
 def spareggio(valore1, valore2):
     # Ritorna vinto_il_primo, valore
@@ -336,6 +381,11 @@ def spareggio(valore1, valore2):
                 return 1, valore1
             if valore1[1] < valore2[1]:
                 return -1, valore2
+        case "SCALA_COLORE":
+            if valore1[1] > valore2[1]:
+                return 1, valore1
+            if valore1[1] < valore2[1]:
+                return -1, valore2
     # Assumendo che in caso di pareggio totale vinca "io"
     return 0, valore1
 
@@ -386,12 +436,12 @@ def play(mieCarte = [], flop = []):
 
     return vinto
 
-N_PLAYERS = 6
+N_PLAYERS = 10
 N_GAMES = 30000
 
 if __name__ == "__main__":
-    mieCarte = [0, 15]
-    flop = [13, 28, 31, 35, 42]
+    mieCarte = None
+    flop = []
     vinte = 0
     for _ in range(N_GAMES):
         vinte += play(mieCarte=mieCarte, flop=flop)
@@ -402,6 +452,7 @@ if __name__ == "__main__":
         print(f"Carte in mano: {strCarta(mieCarte[0])}, {strCarta(mieCarte[1])}")
     for carta in flop:
         print(f"Flop: {strCarta(carta)}")
+    print(f"Scala Colore: {SCALA_COLORE}")
     print(f"Poker: {POKER}")
     print(f"Full: {FULL}")
     print(f"Colore: {COLORE}")
@@ -411,6 +462,7 @@ if __name__ == "__main__":
     print(f"Coppia: {COPPIA}")
     print(f"Carta Alta: {CARTA_ALTA}")
     print()
+    print(f"Scala Colore - giocatore: {SCALA_COLORE_GIOCATORE*100/N_GAMES}%")
     print(f"Poker - giocatore: {POKER_GIOCATORE*100/N_GAMES}%")
     print(f"Full - giocatore: {FULL_GIOCATORE*100/N_GAMES}%")
     print(f"Colore - giocatore: {COLORE_GIOCATORE*100/N_GAMES}%")
