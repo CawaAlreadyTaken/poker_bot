@@ -97,11 +97,14 @@ def full(tutte, giocatore=False):
 
 def colore(tutte, giocatore=False):
     global COLORE_GIOCATORE
-    colori = [int(x//13) for x in tutte]
-    if colori.count(0) >= 5 or colori.count(1) >= 5 or colori.count(2) >= 5 or colori.count(3) >= 5:
-        if giocatore:
-            COLORE_GIOCATORE += 1
-        return ("COLORE", _)
+    colori = {'0': [], '1': [], '2': [], '3': []}
+    for carta in tutte:
+        colori[str(int(carta//13))].append(carta%13)
+    for colore in colori:
+        if len(colori[colore]) >= 5:
+            if giocatore:
+                COLORE_GIOCATORE += 1
+            return ("COLORE", sorted(colori[colore])[-1:-6:-1])
     return False
 
 
@@ -314,7 +317,11 @@ def spareggio(valore1, valore2):
             if valore1[1] < valore2[1]:
                 return -1, valore2
         case "COLORE":
-            pass
+            for x, y in zip(valore1[1], valore2[1]):
+                if x > y:
+                    return 1, valore1
+                if x < y:
+                    return -1, valore2
         case "FULL":
             if valore1[1] > valore2[1]:
                 return 1, valore1
